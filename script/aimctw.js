@@ -20,6 +20,7 @@ function cal() {
   if (time > 2700) {
     time = 800;
   }
+  document.getElementById("rsl").innerHTML += "AI: 讓我數一數...
   const interval = setInterval(() => {
     if (i < resl) {
       document.getElementById("rsl").innerHTML += (i + 1) + " ";
