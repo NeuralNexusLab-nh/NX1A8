@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>隨機抽籤系統</title>
+    <script src="/script/random.js"></script>
+  </head>
+  <body>
+    <h1 id="tit"></h1>
+    <p id="des"></p>
+    <hr>
+    <h3 id="ite"></h3>
+    <input id="ites" placeholder="item1, item2, item3">
+    <button onclick="random()">隨機抽籤!</button>
+    <hr>
+    <h3>抽到的結果:</h3>
+    <p id="rsl"></p>
+    <script>
+      document.getElementById("tit").innerHTML = "隨機抽籤系統";
+      document.getElementById("des").innerHTML = "這個系統使用JavaScript的隨機函式來抽籤。";
+      document.getElementById("ite").innerHTML = "物品 (使用','分隔):";
+      function random () {
+        document.getElementById("rsl").innerHTML = "隨機混亂清單中...";
+        var items = document.getElementById("ites").value.split(",");
+        setTimeout(() => {
+          document.getElementById("rsl").innerHTML = "生成隨機變數...";
+          setTimeout(() => {
+            document.getElementById("rsl").innerHTML = items[Math.floor(Math.random() * items.length)];
+          }, 2500);
+        }, 2500);
+      }
+    </script>
+  </body>
+</html>
