@@ -1,9 +1,3 @@
-(function () {
-  document.getElementById("tit").innerHTML = "AIMC - Artificial Intelligence Math Calculator";
-  document.getElementById("des").innerHTML = "AIMC is a math caculator, it use AI to calculate.";
-  document.getElementById("eq").innerHTML = "EQUATION:";
-  localStorage.setItem("isExe", "False");
-})()
 function cal() {
   if (localStorage.getItem("isExe") == "True") {
     return;
