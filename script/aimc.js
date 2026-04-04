@@ -14,8 +14,11 @@ function cal() {
   }
   let i = 0;
   time = Math.floor(10000 / resl);
-  if (time < 8) {
+  if (time < 20) {
     time = 0.1;
+  }
+  if (time > 2700) {
+    time = 800;
   }
   const interval = setInterval(() => {
     if (i < resl) {
