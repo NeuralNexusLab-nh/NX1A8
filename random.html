@@ -12,6 +12,8 @@
     <h3 id="ite"></h3>
     <input id="ites" placeholder="item1, item2, item3">
     <button onclick="random()">Random!</button>
+    <br>
+    <button onclick="titlec()">Change title</button>
     <hr>
     <h3>Random result:</h3>
     <h2 id="rsl"></h2>
@@ -28,6 +30,9 @@
             document.getElementById("rsl").innerHTML = items[Math.floor(Math.random() * items.length)];
           }, 2500);
         }, 2500);
+      }
+      function titlec () {
+        document.getElementById("tit").innerText = prompt("Input title:");
       }
     </script>
   </body>
