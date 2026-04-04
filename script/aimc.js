@@ -20,9 +20,10 @@ function cal() {
   if (time > 2700) {
     time = 800;
   }
+  document.getElementById("rsl").innerHTML += "AI: Let me count...<br>";
   const interval = setInterval(() => {
     if (i < resl) {
-      document.getElementById("rsl").innerHTML += (i + 1) + " ";
+      document.getElementById("rsl").innerHTML += (i + 1) + ", ";
       i++;
     } else {
       clearInterval(interval);
