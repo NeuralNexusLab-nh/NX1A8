@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>AIMC</title>
+    <script src="/script/aimctw.js"></script>
+  </head>
+  <body>
+    <h1 id="tit"></h1>
+    <p id="des"></p>
+    <hr>
+    <h3 id="eq"></h3>
+    <input id="eqt" placeholder="10+1,(5*20)^3... 等等的算式">
+    <button onclick="cal()">CALCULATE</button>
+    <br>
+    <p id="rsl"></p>
+    <script>
+      document.getElementById("tit").innerHTML = "AIMC - 超級人工智慧數學計算機";
+      document.getElementById("des").innerHTML = "AIMC是一個使用AI(人工智慧)來計算的計算機";
+      document.getElementById("eq").innerHTML = "算式:";
+      localStorage.setItem("isExe", "False");
+    </script>
+  </body>
+</html>
