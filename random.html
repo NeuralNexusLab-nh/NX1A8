@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Random</title>
+    <script src="/script/random.js"></script>
+  </head>
+  <body>
+    <h1 id="tit"></h1>
+    <p id="des"></p>
+    <hr>
+    <h3 id="ite"></h3>
+    <input id="ites" placeholder="item1, item2, item3">
+    <button onclick="random()">Random!</button>
+    <hr>
+    <h3>Result:</h3>
+    <p id="rsl"></p>
+    <script>
+      document.getElementById("tit").innerHTML = "Random";
+      document.getElementById("des").innerHTML = "This project use JavaScript's random function to choose a random item.";
+      document.getElementById("ite").innerHTML = "Items (Use comma to segmentation two items):";
+      function random () {
+        document.getElementById("rsl").innerHTML = "Making list random...";
+        var items = document.getElementById("ites").value.split(",");
+        setTimeout(() => {
+          document.getElementById("rsl").innerHTML = "Creating random variable...";
+          setTimeout(() => {
+            document.getElementById("rsl").innerHTML = items[Math.floor(Math.random() * items.length)];
+          }, 2500);
+        }, 2500);
+      }
+    </script>
+  </body>
+</html>
