@@ -1,7 +1,23 @@
+(function () {
+  document.getElementById("tit").innerHTML = "AIMC - Artificial Intelligence Math Calculator";
+  document.getElementById("des").innerHTML = "AIMC is a math caculator, it use AI to calculate.";
+  document.getElementById("eq").innerHTML = "EQUATION:";
+  localStorage.setItem("isExe", "False");
+})()
 function cal() {
+  if (localStorage.getItem("isExe") == "True") {
+    return;
+  }
+  localStorage.setItem("isExe", "True");
   document.getElementById("rsl").innerHTML = "";
   const equ = document.getElementById("eqt").value;
-  const resl = eval(equ);
+  try {
+    resl = eval(equ);
+  } catch (e) {
+    localStorage.setItem("isExe", "False");
+    alert("Error input");
+    return;
+  }
   let i = 0;
   const interval = setInterval(() => {
     if (i < resl) {
@@ -9,8 +25,8 @@ function cal() {
       i++;
     } else {
       clearInterval(interval);
-      document.getElementById("rsl").innerHTML += "<hr>";
-      document.getElementById("rsl").innerText += "The result is " + resl;
+      alert("The result is " + resl);
+      localStorage.setItem("isExe", "False");
     }
   }, 333);
 }
