@@ -12,12 +12,14 @@
     <h3 id="ite"></h3>
     <input id="ites" placeholder="item1, item2, item3">
     <button onclick="random()">隨機抽籤!</button>
+    <br>
+    <button onclick="titlec()">更改標題</button>
     <hr>
     <h3>抽到的結果:</h3>
     <h2 id="rsl"></h2>
     <script>
-      document.getElementById("tit").innerHTML = "隨機抽籤系統";
-      document.getElementById("des").innerHTML = "這個系統使用JavaScript的隨機函式來抽抽出隨機一個物品。";
+      document.getElementById("tit").innerText = "隨機抽籤系統";
+      document.getElementById("des").innerHTML = "這個抽籤系統使用JavaScript的隨機函式來抽出隨機一個物品。";
       document.getElementById("ite").innerHTML = "物品 (使用','分隔):";
       function random () {
         document.getElementById("rsl").innerHTML = "隨機混亂清單中...";
@@ -28,6 +30,9 @@
             document.getElementById("rsl").innerHTML = items[Math.floor(Math.random() * items.length)];
           }, 2500);
         }, 2500);
+      }
+      function titlec () {
+        document.getElementById("tit").innerText = prompt("輸入標題:");
       }
     </script>
   </body>
