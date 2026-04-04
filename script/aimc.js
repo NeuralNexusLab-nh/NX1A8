@@ -14,6 +14,9 @@ function cal() {
   }
   let i = 0;
   time = Math.floor(10000 / resl);
+  if (time < 8) {
+    time = 0.1;
+  }
   const interval = setInterval(() => {
     if (i < resl) {
       document.getElementById("rsl").innerHTML += (i + 1) + " ";
