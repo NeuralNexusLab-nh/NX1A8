@@ -174,9 +174,9 @@ async function start(){
     await sleep(1000);
     number.innerText="等等";
     await sleep(1000);
-    number.innerText="騙你的";
+    number.innerText="騙你的!! 其實是";
     await sleep(1000);
-    number.innerText="其實是 " + rand(min,max,absent).toString() ?? final;
+    number.innerText= rand(min,max,absent);
   }
 
   // ===== 2 改答案 =====
@@ -187,11 +187,11 @@ async function start(){
     await sleep(1500);
     number.innerText="剛剛也是騙你的";
     await sleep(1000);
-    number.innerText="這才是真的 " + final.toString();
+    number.innerText="這才是真的 " + final;
   }
 
   // ===== 3 駭客入侵 =====
-  else if(eventIndex===3){
+  else if(eventIndex===4){
     await spin(2000,min,max,absent);
 
     number.classList.add("glitch");
@@ -218,8 +218,8 @@ async function start(){
     number.innerText = final;
   }
 
-  // ===== 4 VCR =====
-  else if(eventIndex===4){
+  // ===== 3 VCR =====
+  else if(eventIndex===3){
     await spin(2000,min,max,absent);
 
     number.innerText="請看 VCR";
@@ -232,10 +232,10 @@ async function start(){
 
     document.body.appendChild(iframe);
 
-    await sleep(6000);
+    await sleep(15000);
     iframe.remove();
 
-    number.innerText=final;
+    number.innerText="所以你知道是誰了嗎?;
   }
 
   // ===== 5 上次 =====
