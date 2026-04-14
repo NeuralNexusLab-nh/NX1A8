@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>量子疊加態隨機抽籤系統</title>
+
+<style>
+body {
+  background:black;
+  color:#0ff;
+  font-family:monospace;
+  text-align:center;
+  transition:0.2s;
+}
+
+/* 白閃 */
+.white {
+  background:white !important;
+  color:black !important;
+}
+
+/* 數字 */
+#number {
+  font-size:90px;
+  text-shadow:0 0 20px #0ff, 0 0 40px #f0f;
+}
+
+/* glitch */
+.glitch {
+  animation:glitch 0.15s infinite;
+}
+@keyframes glitch {
+  50% { transform:translate(3px,-2px); }
+}
+
+/* 終端機 */
+#terminal {
+  display:none;
+  text-align:left;
+  padding:20px;
+  height:220px;
+  overflow:auto;
+  color:#0f0;
+  border-top:1px solid #0f0;
+}
+
+/* UI */
+input,button {
+  background:black;
+  color:#0ff;
+  border:1px solid #0ff;
+  padding:6px;
+}
+button:disabled { opacity:0.3; }
+
+#status {
+  margin-top:10px;
+  color:#ffcc00;
+}
+</style>
+</head>
+
+<body>
+
+<h1>量子疊加態隨機抽籤系統</h1>
+
+範圍:
+<input id="min" value="1" size="3"> -
+<input id="max" value="50" size="3"><br><br>
+
+缺席:
+<input id="absent" placeholder="例如: 3,5,10"><br><br>
+
+<button id="btn" onclick="start()">開始抽籤</button>
+
+<div id="number">?</div>
+<div id="status">狀態：待機</div>
+
+<div id="terminal"></div>
+
+<script>
+let eventIndex = -1;
+let lastPick = null;
+let running = false;
+
+// 正確寫法（你剛剛炸掉的地方）
+const number = document.getElementById("number");
+const status = document.getElementById("status");
+const terminal = document.getElementById("terminal");
+const btn = document.getElementById("btn");
+
+function rand(min,max,ex){
+  let n;
+  let attempts = 0;
+  do {
+    n = Math.floor(Math.random()*(max-min+1))+min;
+    attempts++;
+    if(attempts > 1000){
+      return null; // 防止無限 loop
+    }
+  } while(ex.includes(n));
+  return n;
+}
+
+function sleep(ms){
+  return new Promise(r=>setTimeout(r,ms));
+}
+
+async function spin(ms,min,max,ex){
+  let end = Date.now()+ms;
+  while(Date.now()<end){
+    number.innerText = rand(min,max,ex) ?? "?";
+    await sleep(40);
+  }
+}
+
+async function typeCLI(text){
+  terminal.innerText="";
+  for(let c of text){
+    terminal.innerText += c;
+    await sleep(10);
+  }
+}
+
+async function flash(){
+  document.body.classList.add("white");
+  await sleep(80);
+  document.body.classList.remove("white");
+}
+
+async function start(){
+  if(running) return;
+  running = true;
+  btn.disabled = true;
+
+  let min = +document.getElementById("min").value;
+  let max = +document.getElementById("max").value;
+  let absent = document.getElementById("absent").value
+    .split(",").map(x=>+x).filter(x=>!isNaN(x));
+
+  if(absent.length >= (max-min+1)){
+    alert("你把全部人都設成缺席了，是要抽誰？？");
+    running=false;
+    btn.disabled=false;
+    return;
+  }
+
+  let final = rand(min,max,absent) ?? "其實沒有要抽";
+
+  // 清場
+  document.body.classList.remove("white");
+  number.classList.remove("glitch");
+  terminal.style.display="none";
+  document.querySelectorAll("iframe").forEach(e=>e.remove());
+
+  status.innerText = "狀態：抽籤中...";
+  if(eventIndex===-1){
+    number.innerText = "大家都知道這是誰做的嗎? 知道的揮揮手!";
+    await sleep(2000);
+    number.innerText = "我要抽囉!";
+    await sleep(1000);
+    number.innerText = final;
+  }
+  // ===== 0 正常 =====
+  else if(eventIndex===0){
+    await spin(3000,min,max,absent);
+    number.innerText = final;
+  }
+
+  // ===== 1 騙 =====
+  else if(eventIndex===1){
+    await spin(4000,min,max,absent);
+    number.innerText = final;
+    await sleep(1000);
+    number.innerText="等等";
+    await sleep(1000);
+    number.innerText="騙你的";
+    await sleep(1000);
+    number.innerText="其實是 " + rand(min,max,absent).toString() ?? final;
+  }
+
+  // ===== 2 改答案 =====
+  else if(eventIndex===2){
+    await spin(4000,min,max,absent);
+    let fake = rand(min,max,absent) ?? final;
+    number.innerText="騙你的 其實是 "+fake;
+    await sleep(1500);
+    number.innerText="剛剛也是騙你的";
+    await sleep(1000);
+    number.innerText="這才是真的 " + final.toString();
+  }
+
+  // ===== 3 駭客入侵 =====
+  else if(eventIndex===3){
+    await spin(2000,min,max,absent);
+
+    number.classList.add("glitch");
+    status.innerText="狀態：⚠️ 入侵偵測";
+
+    for(let i=0;i<6;i++){
+      await flash();
+      await sleep(60);
+    }
+
+    terminal.style.display="block";
+
+    await typeCLI(
+`> connecting...
+> bypassing firewall...
+> injecting payload...
+> ACCESS GRANTED
+> selecting target...`
+    );
+
+    await sleep(1000);
+
+    number.classList.remove("glitch");
+    number.innerText = final;
+  }
+
+  // ===== 4 VCR =====
+  else if(eventIndex===4){
+    await spin(2000,min,max,absent);
+
+    number.innerText="請看 VCR";
+    await sleep(1500);
+
+    let iframe=document.createElement("iframe");
+    iframe.width=300;
+    iframe.height=500;
+    iframe.src="https://www.youtube.com/embed/jE2sfyPkLMU?autoplay=1&mute=1";
+
+    document.body.appendChild(iframe);
+
+    await sleep(6000);
+    iframe.remove();
+
+    number.innerText=final;
+  }
+
+  // ===== 5 上次 =====
+  else if(eventIndex===5){
+    await spin(2000,min,max,absent);
+
+    if(lastPick !== null){
+      number.innerText="就是跟上次一樣啦";
+      await sleep(1500);
+      number.innerText=lastPick;
+      final=lastPick;
+    } else {
+      number.innerText=final;
+    }
+  }
+
+  // ===== 6 拖延 =====
+  else if(eventIndex===6){
+    await spin(3000,min,max,absent);
+
+    number.innerText="其實結果早已注定了";
+    await sleep(2000);
+
+    number.innerText="只是你還不知道而已";
+    await sleep(2000);
+
+    number.innerText=final;
+  }
+
+  // ===== 7 壓迫 =====
+  else if(eventIndex===7){
+    await spin(2000,min,max,absent);
+
+    number.innerText="系統選擇了你";
+    await sleep(2000);
+
+    number.innerText="你就無法逃避";
+    await sleep(2000);
+
+    number.innerText=final;
+  }
+
+  // ===== 結束 =====
+  status.innerText="狀態：完成 ✅";
+  number.innerText=final;
+
+  lastPick=final;
+  eventIndex=(eventIndex+1)%8;
+
+  running=false;
+  btn.disabled=false;
+}
+</script>
+
+</body>
+</html>
