@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>量子疊加態隨機抽籤系統 v6</title>
+<style>
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:#000;
+  color:#0ff;
+  font-family:'Courier New',monospace;
+  text-align:center;
+  overflow:hidden;
+  user-select:none;
+}
+canvas{position:fixed;top:0;left:0;z-index:-3;}
+body::after{
+  content:"";
+  position:fixed;width:100%;height:100%;
+  background:repeating-linear-gradient(rgba(0,0,0,0.18) 0px,rgba(0,0,0,0.18) 2px,transparent 2px,transparent 4px);
+  pointer-events:none;z-index:-2;
+}
+#bgWord{
+  position:fixed;width:100%;height:100%;
+  white-space:pre;font-size:16px;opacity:0.1;
+  color:#0f0;z-index:-1;pointer-events:none;
+}
+#app{
+  position:relative;min-height:100vh;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:20px 10px 30px;gap:10px;
+}
+h1{font-size:26px;letter-spacing:4px;color:#0ff;text-shadow:0 0 12px #0ff;margin:0 0 2px;}
+.subtitle{font-size:12px;color:#0f0;letter-spacing:6px;opacity:0.6;margin-bottom:8px;}
+
+.controls{
+  background:rgba(0,255,255,0.04);
+  border:1px solid rgba(0,255,255,0.2);
+  border-radius:10px;padding:14px 24px;
+  display:flex;flex-direction:column;gap:10px;
+  width:min(420px,92vw);
+}
+.row{display:flex;align-items:center;gap:10px;font-size:15px;}
+.row label{color:#0f0;min-width:60px;text-align:left;}
+input{
+  background:rgba(0,0,0,0.6);color:#0ff;
+  border:1px solid #0ff;border-radius:4px;
+  padding:6px 10px;font-family:inherit;font-size:15px;
+  width:70px;text-align:center;outline:none;transition:border-color 0.2s;
+}
+input:focus{border-color:#f0f;}
+input#absent{width:100%;flex:1;}
+.sep{color:#0ff;font-size:18px;}
+#btn{
+  margin-top:4px;width:100%;padding:14px;
+  font-family:inherit;font-size:20px;letter-spacing:4px;
+  color:#000;background:#0ff;border:none;border-radius:6px;
+  cursor:pointer;transition:all 0.15s;font-weight:bold;
+}
+#btn:hover:not(:disabled){background:#f0f;box-shadow:0 0 20px #f0f;}
+#btn:active:not(:disabled){transform:scale(0.97);}
+#btn:disabled{opacity:0.3;cursor:not-allowed;}
+
+/* 台詞區塊 */
+#scriptBox{
+  width:min(500px,92vw);
+  min-height:90px;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:8px;
+}
+.line{
+  font-size:18px;
+  color:#ff0;
+  letter-spacing:2px;
+  text-shadow:0 0 8px #ff0;
+  opacity:0;
+  transform:translateY(6px);
+  transition:opacity 0.4s ease, transform 0.4s ease;
+  line-height:1.5;
+}
+.line.show{opacity:1;transform:translateY(0);}
+.line.dim{opacity:0.3;color:#fa0;}
+
+/* 數字 */
+#number{
+  font-size:clamp(100px,18vw,150px);
+  font-weight:bold;line-height:1;
+  text-shadow:0 0 30px #0ff,0 0 60px #f0f;
+  letter-spacing:-2px;
+  min-height:160px;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* 進度條 */
+#progressWrap{width:min(420px,92vw);height:3px;background:rgba(0,255,255,0.1);border-radius:2px;overflow:hidden;}
+#progressBar{height:100%;width:0%;background:linear-gradient(90deg,#0ff,#f0f);border-radius:2px;}
+
+#history{font-size:13px;color:rgba(0,255,255,0.4);letter-spacing:2px;min-height:20px;}
+
+@keyframes flash{
+  0%,100%{text-shadow:0 0 30px #0ff,0 0 60px #f0f;}
+  50%{text-shadow:0 0 80px #fff,0 0 160px #f0f;}
+}
+.flashing{animation:flash 0.3s ease-in-out 4;}
+</style>
+</head>
+<body>
+
+<canvas id="matrix"></canvas>
+<div id="bgWord"></div>
+
+<div id="app">
+  <h1>量子疊加態隨機抽籤系統</h1>
+  <div class="subtitle">QUANTUM SUPERPOSITION LOTTERY v6</div>
+
+  <div class="controls">
+    <div class="row">
+      <label>範圍</label>
+      <input id="min" value="1">
+      <span class="sep">—</span>
+      <input id="max" value="50">
+    </div>
+    <div class="row">
+      <label>缺席</label>
+      <input id="absent" placeholder="如：3, 5, 10">
+    </div>
+    <button id="btn" onclick="start()">⚡ 開始抽籤</button>
+  </div>
+
+  <div id="scriptBox"></div>
+
+  <div id="number">?</div>
+
+  <div id="progressWrap"><div id="progressBar"></div></div>
+
+  <div id="history"></div>
+</div>
+
+<script>
+let running=false;
+let setIndex=0;
+let historyList=[];
+
+const numberEl=document.getElementById("number");
+const scriptBox=document.getElementById("scriptBox");
+const bgEl=document.getElementById("bgWord");
+const btnEl=document.getElementById("btn");
+const progressBar=document.getElementById("progressBar");
+const historyEl=document.getElementById("history");
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+function rand(min,max,ex){
+  let n,limit=0;
+  do{n=Math.floor(Math.random()*(max-min+1))+min;limit++;if(limit>1000)return null;}
+  while(ex.includes(n));
+  return n;
+}
+
+function getAbsent(){
+  return document.getElementById("absent").value
+    .split(/[,，\s]+/).map(x=>parseInt(x.trim())).filter(x=>!isNaN(x));
+}
+
+// Matrix rain
+const canvas=document.getElementById("matrix");
+const ctx=canvas.getContext("2d");
+canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+window.addEventListener("resize",()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
+const fontSize=14;
+let drops=[];
+for(let i=0;i<canvas.width/fontSize;i++)drops[i]=Math.random()*canvas.height/fontSize;
+function drawMatrix(){
+  ctx.fillStyle="rgba(0,0,0,0.05)";ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle="#0f0";ctx.font=fontSize+"px monospace";
+  for(let i=0;i<drops.length;i++){
+    ctx.fillText(Math.random()>0.5?"1":"0",i*fontSize,drops[i]*fontSize);
+    if(drops[i]*fontSize>canvas.height&&Math.random()>0.975)drops[i]=0;
+    drops[i]++;
+  }
+}
+setInterval(drawMatrix,33);
+
+function genBgWord(text){
+  let o="";
+  for(let i=0;i<720;i++){o+=Math.random()>0.5?"0":"1";if(i%72===0)o+="\n";}
+  o+="\n\n\n        >>> "+text+" <<<";
+  bgEl.innerText=o;
+}
+
+// 進度條
+let progressTimer=null;
+function startProgress(duration){
+  let start=Date.now();clearInterval(progressTimer);progressBar.style.width="0%";
+  progressTimer=setInterval(()=>{
+    let pct=Math.min(100,(Date.now()-start)/duration*100);
+    progressBar.style.width=pct+"%";
+    if(pct>=100)clearInterval(progressTimer);
+  },50);
+}
+
+// 逐句顯示台詞
+async function showLines(lines){
+  scriptBox.innerHTML="";
+  let els=[];
+  for(let l of lines){
+    let div=document.createElement("div");
+    div.className="line";
+    div.innerText=l;
+    scriptBox.appendChild(div);
+    els.push(div);
+  }
+  for(let i=0;i<els.length;i++){
+    // 把前面的句子變暗
+    if(i>0) els[i-1].classList.add("dim");
+    els[i].classList.add("show");
+    genBgWord(lines[i]);
+    await sleep(1100);
+  }
+  await sleep(400);
+}
+
+// ===== 激勵人心台詞劇本組合（每組 3~5 句）=====
+const scriptSets = [
+  [
+    "系統啟動中…掃描所有候選人 🔍",
+    "量子波函數正在計算最佳人選…",
+    "這題需要一個有勇氣的人站出來 💡",
+    "鎖定目標，即將揭曉答案 🎯",
+  ],
+  [
+    "今天的解題之星，就藏在你們之中 ✨",
+    "別緊張，每個人都有機會發光",
+    "系統正在感應最有靈感的那顆腦袋…",
+    "相信你自己，你比你想像的更厲害 💪",
+    "命運的手指，即將指向你",
+  ],
+  [
+    "宇宙正在排列最強組合 🌌",
+    "這題值得一個認真的高手來解開",
+    "不要害怕，答錯了也是學習 😎",
+    "準備好了嗎？機會只敲一次門",
+  ],
+  [
+    "量子糾纏中… 抽籤粒子已加速旋轉 ⚛️",
+    "每個號碼都有它的使命",
+    "今天站出來的人，將被歷史銘記 🔥",
+    "勇氣是成功的第一步，你有嗎？",
+    "命運齒輪轉動，結果即將揭曉 ⚙️",
+  ],
+  [
+    "環視四周，誰最有今天的氣場？",
+    "這題不難，只需要一點點的勇敢 🌟",
+    "錯了沒關係，台上的人永遠比台下的更了不起",
+    "系統鎖定中… 請屏住呼吸 🫁",
+  ],
+  [
+    "數學之神睜開了眼睛 👁️",
+    "它在尋找今天最適合的那個人…",
+    "你的潛力比你想像的還要驚人 💫",
+    "站出來，讓大家看看你的實力",
+    "答案就在你的腦中，相信直覺 ✅",
+  ],
+  [
+    "抽籤儀式即將開始，請保持肅靜 🔔",
+    "每個人的名字都在候選名單上",
+    "今天輪到你發光發熱了 ☀️",
+    "放輕鬆，這只是一個開始",
+  ],
+  [
+    "系統偵測到高度潛力的思考者…",
+    "你上課認真嗎？現在就是證明的時候",
+    "不管結果如何，勇敢就是贏 🏆",
+    "量子態收斂中… 號碼即將出現 ⚡",
+  ],
+  // === 新增 16 組（總數 24 組）===
+  [
+    "隨機性正在讓路給命運 🎲",
+    "不要低頭，你可能是被選中的人",
+    "心跳加速是正常的，因為這一刻屬於你 💓",
+    "系統已讀取你的專注度… 指數超標",
+  ],
+  [
+    "平行宇宙中，有一個你已經站起來了 🌍",
+    "讓這個宇宙的你跟上腳步",
+    "答錯？平行宇宙的你會笑你太客氣 😄",
+    "來吧，展現你的版本答案",
+  ],
+  [
+    "幸運不是隨機，是準備好的人的唯一機會 🍀",
+    "你準備好了嗎？",
+    "系統正在過濾雜訊… 剩下最純粹的勇氣",
+    "就是現在，不要猶豫 🚀",
+  ],
+  [
+    "老師的滑鼠已經饑渴難耐 🖱️",
+    "點下去之前，命運還有三秒可以掙扎",
+    "三… 二… 一… 鎖定",
+    "恭喜，你被物理定律選中 ⚛️",
+  ],
+  [
+    "不要問會不會抽到你，要問你準備好了沒",
+    "今天不當觀眾，今天當主角 🎭",
+    "系統判斷：你體內的潛能正在洩漏",
+    "站起來，讓全班重新認識你 👑",
+  ],
+  [
+    "隨機抽樣之神正在打瞌睡… 我們小聲進行 🤫",
+    "開玩笑的，祂永遠清醒",
+    "你的名字在名單上發光了 ✨",
+    "這不是巧合，這是量子呼應",
+  ],
+  [
+    "程式碼深處，一個迴圈正為你而停止 ⏸️",
+    "break 之後，就是你上場的時候",
+    "不要怕出錯，工程師都在 debug 中成長",
+    "勇敢 print 出你的答案 🖨️",
+  ],
+  [
+    "今天的幸運數字正在形成",
+    "它會對應到一個座位、一個名字、一個你 🎯",
+    "不要閃躲，命運的 spot light 很燙但很亮",
+    "上台，就是一種勝利 ✌️",
+  ],
+  [
+    "系統正在用亂數讀取你的勇氣值",
+    "讀取結果：爆表中 💥",
+    "剩下的事情很簡單 — 站起來回答",
+    "你的答案，可能比你想的還精彩",
+  ],
+  [
+    "熵增定律告訴我們，混亂中必然產生驚喜 🎁",
+    "你就是那個驚喜",
+    "不要讓緊張吃掉你的才華",
+    "呼吸，然後發光 🌟",
+  ],
+  [
+    "這不是抽籤，這是召喚 📢",
+    "被召喚的人，身上都有光",
+    "你不平凡，只是還沒站出來而已",
+    "就是現在，起來吧",
+  ],
+  [
+    "系統提示：有一個人即將改變今天課堂的氣氛",
+    "這個人可能是你",
+    "不用完美，只要勇敢 🦁",
+    "答案會在你站起來的那一刻自動浮現",
+  ],
+  [
+    "亂數產生器正在禱告，希望抽到勇敢的人 🙏",
+    "你看起來很勇敢",
+    "不要讓它失望",
+    "來，給全班一個驚喜 🎆",
+  ],
+  [
+    "老師的心中沒有名單，只有對你的期待",
+    "系統模擬中… 模擬結果：你該上了",
+    "錯了就錯了，教室就是拿來犯錯的地方",
+    "站起來，比答案更重要 🎤",
+  ],
+  [
+    "量子疊加態中，你同時是被選中與沒被選中",
+    "當你站起來那一刻，狀態就塌縮了",
+    "塌縮成「超帥氣的那個」",
+    "表演時間到 🎩",
+  ],
+  [
+    "最後一組，但絕非最不重要的",
+    "命運喜歡壓軸的人 🎬",
+    "你還有三秒可以選擇勇敢",
+    "三… 二… 一… 恭喜你",
+  ],
+];
+
+// 抽籤轉動
+async function spin(ms,min,max,ex){
+  let end=Date.now()+ms;
+  let fast=true;
+  setTimeout(()=>{fast=false;},ms*0.55);
+  while(Date.now()<end){
+    let n=rand(min,max,ex);
+    numberEl.innerText=n??"-";
+    numberEl.style.color=fast?"#0ff":`hsl(${Math.random()*360},100%,70%)`;
+    await sleep(fast?35:90);
+  }
+}
+
+async function start(){
+  if(running)return;
+  running=true;btnEl.disabled=true;
+  progressBar.style.width="0%";
+  numberEl.innerText="?";numberEl.style.color="#0ff";
+  scriptBox.innerHTML="";
+
+  let minVal=+document.getElementById("min").value;
+  let maxVal=+document.getElementById("max").value;
+  let absent=getAbsent();
+
+  if(isNaN(minVal)||isNaN(maxVal)||minVal>maxVal){
+    scriptBox.innerHTML="<div class='line show' style='color:#f44'>⚠ 範圍設定有誤</div>";
+    running=false;btnEl.disabled=false;return;
+  }
+  if(absent.length>=(maxVal-minVal+1)){
+    scriptBox.innerHTML="<div class='line show' style='color:#f44'>⚠ 全部缺席了 🙂</div>";
+    running=false;btnEl.disabled=false;return;
+  }
+
+  let final=rand(minVal,maxVal,absent);
+  let lines=scriptSets[setIndex%scriptSets.length];
+
+  // 台詞總時長估算後開始進度條
+  let talkTime=lines.length*1100+400;
+  let totalTime=talkTime+2600;
+  startProgress(totalTime);
+
+  await showLines(lines);
+
+  // 最後一句變暗
+  let allLines=scriptBox.querySelectorAll(".line");
+  allLines.forEach(el=>el.classList.add("dim"));
+
+  await spin(2600,minVal,maxVal,absent);
+
+  // 揭曉
+  numberEl.innerText=final;
+  numberEl.style.color="#fff";
+  numberEl.classList.add("flashing");
+  setTimeout(()=>numberEl.classList.remove("flashing"),1400);
+
+  // 完成台詞
+  scriptBox.innerHTML="";
+  let done=document.createElement("div");
+  done.className="line show";
+  done.style.color="#0f0";
+  done.style.fontSize="20px";
+  done.innerText="完成 ✅  號碼："+final+" 號，請準備回答！";
+  scriptBox.appendChild(done);
+  progressBar.style.width="100%";
+
+  historyList.unshift(final);
+  if(historyList.length>6)historyList.pop();
+  historyEl.innerText="歷史紀錄："+historyList.join(" · ");
+
+  setIndex++;
+  running=false;btnEl.disabled=false;
+}
+</script>
+
+</body>
+</html>
