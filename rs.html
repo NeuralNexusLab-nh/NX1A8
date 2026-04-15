@@ -153,45 +153,11 @@ const historyEl=document.getElementById("history");
 
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
-function rand(min, max, ex) {
-    let limit = 0;
-    const rangeSize = max - min + 1;
-    
-    // 如果排除清單太長，直接返回 null 避免無窮迴圈
-    if (ex.length >= rangeSize) return null;
-
-    // 使用多種亂數來源混合
-    const seed = () => (performance.now() * Math.random() * (Math.random() + 1)) % 1;
-    
-    // 自訂的亂數產生器（混合線性同餘與雜湊）
-    let lastValue = seed();
-    const customRand = () => {
-        lastValue = (lastValue * 9301 + 49297) % 233280;
-        return lastValue / 233280;
-    };
-
-    do {
-        // 動態切換亂數方法，增加不可預測性
-        let r;
-        if (Math.random() < 0.7) {
-            r = customRand();               // 70% 用自訂亂數
-        } else {
-            r = Math.random();               // 30% 用內建亂數
-            if (Math.random() < 0.5) {
-                r = (r + Math.sin(performance.now()) * 0.5) % 1; // 加入時間干擾
-            }
-        }
-
-        let n = Math.floor(r * (max - min + 1)) + min;
-        
-        // 額外抖動：極低機率直接忽略 ex 檢查（增加隨機驚喜）
-        if (Math.random() < 0.02 && !ex.includes(n)) return n;
-
-        limit++;
-        if (limit > 2000) return null;  // 放寬嘗試次數，避免太快失敗
-    } while (ex.includes(n));
-    
-    return n;
+function rand(min,max,ex){
+  let n,limit=0;
+  do{n=Math.floor(Math.random()*(max-min+1))+min;limit++;if(limit>1000)return null;}
+  while(ex.includes(n));
+  return n;
 }
 
 function getAbsent(){
